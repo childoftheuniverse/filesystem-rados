@@ -72,6 +72,13 @@ func (w *RadosAppender) Seek(ctx context.Context, offset int64, whence int) (
 }
 
 /*
+Tell is fully supported and returns the current offset into the object.
+*/
+func (w *RadosAppender) Tell(ctx context.Context) (int64, error) {
+	return w.pos, nil
+}
+
+/*
 Close is a no-op since Rados operations are quasi-synchronous and stateless.
 */
 func (*RadosAppender) Close(ctx context.Context) error {

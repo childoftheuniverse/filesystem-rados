@@ -97,6 +97,14 @@ func (r *RadosReadWriteCloser) Seek(
 }
 
 /*
+Tell determines the current position of the ReadWriteCloser in the Rados
+object as outlined in the io.Seeker API.
+*/
+func (r *RadosReadWriteCloser) Tell(ctx context.Context) (int64, error) {
+	return r.pos, nil
+}
+
+/*
 Close is a no-op since Rados operations are quasi-synchronous and stateless.
 */
 func (r *RadosReadWriteCloser) Close(ctx context.Context) error {
