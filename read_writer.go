@@ -3,6 +3,7 @@ package rados
 import (
 	"github.com/ceph/go-ceph/rados"
 	"golang.org/x/net/context"
+	"io"
 	"os"
 )
 
@@ -43,6 +44,9 @@ func (r *RadosReadWriteCloser) Read(ctx context.Context, p []byte) (n int, err e
 	n, err = r.rctx.Read(r.oid, p, uint64(r.pos))
 	if n > 0 {
 		r.pos += int64(n)
+	} else if n == 0 && err == nil {
+		/* TODO: find some way to check this is actually the end of the file. */
+		err = io.EOF
 	}
 	return
 }
