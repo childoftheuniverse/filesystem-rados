@@ -1,15 +1,25 @@
 package rados
 
 import (
-	"github.com/ceph/go-ceph/rados"
-	"github.com/childoftheuniverse/filesystem"
-	"golang.org/x/net/context"
+	"context"
+	"flag"
+	"fmt"
 	"log"
 	"net/url"
 	"os"
 	"strings"
 	"sync"
+
+	"github.com/ceph/go-ceph/rados"
+	"github.com/childoftheuniverse/filesystem"
 )
+
+var configPath = flag.String("rados-config", "",
+	"Path to the Rados configuration file (usually /etc/ceph/ceph.conf)")
+var user = flag.String("rados-user", "",
+	"cephx user to use for talking to ceph/rados")
+var cluster = flag.String("rados-cluster", "",
+	"Ceph cluster name to connect to for rados. Defaults to ceph")
 
 /*
 radosFileSystem provides a filesystem-like interface for Rados object stores.
@@ -28,21 +38,31 @@ type radosFileSystem struct {
 }
 
 /*
-init attempts to create a new Rados connection using the default parameters and,
-if successful, registers a rados:// URL handler with the filesystem API.
+InitRados attempts to create a new Rados connection using the parameters passed
+in via flags and, if successful, registers a rados:// URL handler with the
+filesystem API.
 */
-func init() {
+func InitRados() error {
 	var rfs *rados.Conn
 	var err error
 
-	if rfs, err = rados.NewConn(); err != nil {
-		log.Print("Error connecting to default rados: ", err)
-		return
+	if user != nil && *user != "" {
+		if cluster != nil && *cluster != "" {
+			if rfs, err = rados.NewConnWithClusterAndUser(*cluster, *user); err != nil {
+				return fmt.Errorf("NewConnWithClusterAndUser(%s, %s) -> %s",
+					*cluster, *user, err.Error())
+			}
+		} else {
+			if rfs, err = rados.NewConnWithUser(*user); err != nil {
+				return fmt.Errorf("NewConnWithUser(%s) -> %s", *user, err.Error())
+			}
+		}
+	} else {
+		if rfs, err = rados.NewConn(); err != nil {
+			return fmt.Errorf("NewConn() -> %s", err.Error())
+		}
 	}
-	if err = initRadosConnection(rfs, ""); err != nil {
-		log.Print("Error connecting to default rados: ", err)
-		return
-	}
+	return initRadosConnection(rfs, *configPath)
 }
 
 /*
@@ -111,7 +131,7 @@ func initRadosConnection(rfs *rados.Conn, configPath string) error {
 
 	if len(configPath) > 0 {
 		if err = rfs.ReadConfigFile(configPath); err != nil {
-			return err
+			return fmt.Errorf("ReadConfigFile(%s) -> %s", configPath, err.Error())
 		}
 	} else {
 		if err = rfs.ReadDefaultConfigFile(); err != nil {
@@ -125,7 +145,7 @@ func initRadosConnection(rfs *rados.Conn, configPath string) error {
 		log.Print("Error parsing rados command line arguments: ", err)
 	}
 	if err = rfs.Connect(); err != nil {
-		log.Print("Error connecting to default rados: ", err)
+		log.Print("Error connecting to rados: ", err)
 		return err
 	}
 
