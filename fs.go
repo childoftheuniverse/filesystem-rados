@@ -194,7 +194,7 @@ func (r *radosFileSystem) OpenReader(ctx context.Context, u *url.URL) (
 		return nil, err
 	}
 
-	return NewRadosReadWriteCloser(rctx, u.Path), nil
+	return NewReadWriteCloser(rctx, u.Path), nil
 }
 
 /*
@@ -218,7 +218,7 @@ func (r *radosFileSystem) OpenWriter(ctx context.Context, u *url.URL) (
 		return nil, err
 	}
 
-	return NewRadosReadWriteCloser(rctx, u.Path), nil
+	return NewReadWriteCloser(rctx, u.Path), nil
 }
 
 /*
@@ -236,7 +236,7 @@ func (r *radosFileSystem) OpenAppender(ctx context.Context, u *url.URL) (
 		return nil, err
 	}
 
-	return NewRadosAppender(rctx, u.Path)
+	return NewAppender(rctx, u.Path)
 }
 
 /*

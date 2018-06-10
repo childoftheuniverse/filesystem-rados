@@ -8,27 +8,27 @@ import (
 )
 
 /*
-RadosReadCloser provides both a ReadCloser and a WriteCloser for Rados objects.
+ReadWriteCloser provides both a ReadCloser and a WriteCloser for Rados objects.
 A virtual position within the object is maintained by this class to provide
 a regular filesystem API.
 */
-type RadosReadWriteCloser struct {
+type ReadWriteCloser struct {
 	rctx *rados.IOContext
 	oid  string
 	pos  int64
 }
 
 /*
-NewRadosReadCloser provides a RadosReadCloser object for the Rados object
+NewReadWriteCloser provides a ReadWriteCloser object for the Rados object
 designated as "oid" in the given I/O context. The initial position will be set
 to the beginning of the object.
 
-This function itself only constructs the ReadCloser object, it does not
+This function itself only constructs the ReadWriteCloser object, it does not
 guarantee that the object can actually be accessed properly. This will only
 be determined on the first call to Read() or Write().
 */
-func NewRadosReadWriteCloser(rctx *rados.IOContext, oid string) *RadosReadWriteCloser {
-	return &RadosReadWriteCloser{
+func NewReadWriteCloser(rctx *rados.IOContext, oid string) *ReadWriteCloser {
+	return &ReadWriteCloser{
 		rctx: rctx,
 		oid:  oid,
 		pos:  0,
@@ -40,7 +40,7 @@ Read fetches up to len(p) bytes from the Rados object pointed to into the
 specified buffer. Returns the number of bytes actually read.
 TODO: does not respect contexts yet.
 */
-func (r *RadosReadWriteCloser) Read(ctx context.Context, p []byte) (n int, err error) {
+func (r *ReadWriteCloser) Read(ctx context.Context, p []byte) (n int, err error) {
 	n, err = r.rctx.Read(r.oid, p, uint64(r.pos))
 	if n > 0 {
 		r.pos += int64(n)
@@ -56,7 +56,7 @@ Write emplaces the bytes contained in p into the current position of the Rados
 object specified by oid.
 TODO: does not respect contexts yet.
 */
-func (r *RadosReadWriteCloser) Write(ctx context.Context, p []byte) (int, error) {
+func (r *ReadWriteCloser) Write(ctx context.Context, p []byte) (int, error) {
 	var err = r.rctx.Write(r.oid, p, uint64(r.pos))
 	if err == nil {
 		r.pos += int64(len(p))
@@ -70,7 +70,7 @@ Seek modifies the position of the ReadWriteCloser in the Rados object as
 outlined in the io.Seeker API.
 TODO: does not respect contexts yet.
 */
-func (r *RadosReadWriteCloser) Seek(
+func (r *ReadWriteCloser) Seek(
 	ctx context.Context, offset int64, whence int) (int64, error) {
 	var stat rados.ObjectStat
 	var newpos int64
@@ -104,13 +104,13 @@ func (r *RadosReadWriteCloser) Seek(
 Tell determines the current position of the ReadWriteCloser in the Rados
 object as outlined in the io.Seeker API.
 */
-func (r *RadosReadWriteCloser) Tell(ctx context.Context) (int64, error) {
+func (r *ReadWriteCloser) Tell(ctx context.Context) (int64, error) {
 	return r.pos, nil
 }
 
 /*
 Close is a no-op since Rados operations are quasi-synchronous and stateless.
 */
-func (r *RadosReadWriteCloser) Close(ctx context.Context) error {
+func (r *ReadWriteCloser) Close(ctx context.Context) error {
 	return nil
 }
